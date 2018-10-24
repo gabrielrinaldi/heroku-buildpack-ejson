@@ -25,8 +25,6 @@ export_env_dir() {
   whitelist_regex=${2:-''}
   blacklist_regex=${3:-'^(PATH|GIT_DIR|CPATH|CPPATH|LD_PRELOAD|LIBRARY_PATH)$'}
   FIXTURES_DIR="$BUILDPACK_HOME/test/fixtures/$1/env"
-  echo "ENV: "
-  echo $(ls $FIXTURES_DIR)
   for e in $(ls $FIXTURES_DIR); do
     echo "$e" | grep -E "$whitelist_regex" | grep -qvE "$blacklist_regex" &&
     export "$e=$(cat $BUILDPACK_HOME/test/fixtures/$1/env/$e)"
