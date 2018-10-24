@@ -50,25 +50,18 @@ test_simple() {
   assertCaptured "Done. Decrypted config.ejson"
 }
 
-test_missing_public_key() {
-  compile_with_fixture missing_public_key
-  assertCapturedError
-  assertCaptured "Loading keypair from environment variables"
-  assertCaptured 'EJSON_PUBLIC_KEY is undefined; make sure EJSON_PUBLIC_KEY and EJSON_PRIVATE_KEY and EJSON_FILE are set'
-}
-
 test_missing_private_key() {
   compile_with_fixture missing_private_key
   assertCapturedError
   assertCaptured "Loading keypair from environment variables"
-  assertCaptured 'EJSON_PRIVATE_KEY is undefined; make sure EJSON_PUBLIC_KEY and EJSON_PRIVATE_KEY and EJSON_FILE are set'
+  assertCaptured 'EJSON_PRIVATE_KEY is undefined; make sure EJSON_PRIVATE_KEY and EJSON_FILE are set'
 }
 
 test_missing_ejson_file() {
   compile_with_fixture missing_ejson_file
   assertCapturedError
   assertCaptured "Loading keypair from environment variables"
-  assertCaptured 'EJSON_FILE is undefined; make sure EJSON_PUBLIC_KEY and EJSON_PRIVATE_KEY and EJSON_FILE are set'
+  assertCaptured 'EJSON_FILE is undefined; make sure EJSON_PRIVATE_KEY and EJSON_FILE are set'
 }
 
 test_ejson_file_not_found_in_build_dir() {
