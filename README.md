@@ -4,7 +4,9 @@ This is a [Heroku Buildback](http://devcenter.heroku.com/articles/buildpacks) th
 [EJSON](https://github.com/Shopify/ejson) secrets on deploy.
 
 It's a fork of [Shopify's EJSON buildpack](https://github.com/Shopify/ejson) that exports secrets as environment
-variables on application start rather than writing to a JSON file when the slug is compiled.
+variables on application start rather than writing to a JSON file when the slug is compiled. This avoids storing
+an unencrypted secrets file on disk and protects against scenarios like a remote code execution exploit
+being able to capture that file.
 
 ## Keys
 
