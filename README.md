@@ -1,6 +1,10 @@
-# Heroku Buildpack for EJSON [![Build Status](https://travis-ci.org/Shopify/heroku-buildpack-ejson.svg?branch=master)](https://travis-ci.org/Shopify/heroku-buildpack-ejson)
+# Heroku Buildpack for EJSON [![Build Status](https://travis-ci.org/envato/heroku-buildpack-ejson.svg?branch=master)](https://travis-ci.org/envato/heroku-buildpack-ejson)
 
-This is a [Heroku Buildback](http://devcenter.heroku.com/articles/buildpacks) that automates the decryption of [EJSON](https://github.com/Shopify/ejson) secrets on deploy.
+This is a [Heroku Buildback](http://devcenter.heroku.com/articles/buildpacks) that automates the decryption of
+[EJSON](https://github.com/Shopify/ejson) secrets on deploy.
+
+It's a fork of [Shopify's EJSON buildpack](https://github.com/Shopify/ejson) that exports secrets as environment
+variables on application start rather than writing to a JSON file when the slug is compiled.
 
 ## Keys
 
@@ -8,32 +12,66 @@ EJSON files are encrypted via a public-key cryptography scheme, the intention be
 can safely be stored on developer machines and in source control, whereas the sensitive private key can be scoped
 only to production infrastructure.
 
-To generate an EJSON keypair, run `ejson keygen`. The public key returned should be used in your project's `.ejson` files
-(by setting the `_public_key` attribute on the top level object and running `ejson encrypt`).
-Then, having set `EJSON_PUBLIC_KEY` and `EJSON_PRIVATE_KEY` appropriately in your Heroku app's environment,
-`heroku-buildpack-ejson` will be able to decrypt your `.ejson` files on deploy.
+## Getting started with EJSON
 
-## Environments
+Install EJSON with `gem install ejson`.
 
-The buildpack has a notion of environments, for instance to distinguish between `production` and `staging` secret configuration.
-The environment is controlled via the Heroku environment variable `EJSON_ENVIRONMENT`.
+Generate an EJSON keypair with `ejson keygen`.
 
-If `EJSON_ENVIRONMENT` is blank or unset, then by default the buildpack will attempt to decrypt all `.ejson` files, excluding
-those with a compound extensions specifying the environment (like `.production.ejson`). For example, in this case
-`config/secrets.ejson` would be decrypted on deploy into `config/secrets.json`, but `config/secrets.staging.ejson`
-would be left untouched.
+```bash
+❯ ejson keygen
+Public Key:
+d437b2159cbf18a9e36fc1aa7a3007ea2b2ea5c0c2878d7101ad740c81418b55
+Private Key:
+24a4a88328317f80bd74ee80d6fe298ae6e9d02361d818c068dfd445b686098e
+```
 
-If `EJSON_ENVIRONMENT` is set, then the buildpack will exclusively decrypt files with a compound extension of the form
-`.$EJSON_ENVIRONMENT.ejson`. For instance, suppose `EJSON_ENVIRONMENT=production`. Then, `config/secrets.production.ejson`
-would be decrypted into `config/secrets.json`, but `config/secrets.staging.ejson` and `config/other_secrets.ejson` would
-be left untouched.
+Create an EJSON file `secrets.ejson` using the public key and add your first secret:
 
-This scheme is intended to eliminate credential reuse. The intention is that each individual Heroku app is configured with
-its own unique keypair; in particular, a `staging` app and a `production` app deployed from the same codebase should not
-need to share.
+```json
+{
+  "_public_key": "d437b2159cbf18a9e36fc1aa7a3007ea2b2ea5c0c2878d7101ad740c81418b55",
+  "SOME_API_KEY": "password"
+}
+```
 
-Additionally, this strategy allows your app to be agnostic about its environment, with respect to configuration.
-Suppose you commit a `secrets.json` for development use, a `secrets.staging.ejson` for a staging app,
-and a `secrets.production.ejson` containing production credentials. Then, your app can read its configuration unconditionally
-from `secrets.json`; in development it will read the original development credentials, and in production or staging
-`secrets.json` will have been overwritten with whichever credential set was appropriate.
+Do no commit this file to source control at this stage. The value is still unencrypted. Use EJSON to encrypt it:
+
+```bash
+❯ ejson encrypt secrets.ejson
+Wrote %d bytes to %s.
+225secrets.ejson
+```
+
+Now the file can be safely committed and deployed.
+
+## Deployment to Heroku
+
+Add the following environment variables to your heroku app's config:
+
+```
+heroku config:set \
+  EJSON_FILE=secrets.ejson \
+  EJSON_PRIVATE_KEY=24a4a88328317f80bd74ee80d6fe298ae6e9d02361d818c068dfd445b686098e
+```
+
+Add this Heroku buildpack:
+
+```
+❯ heroku buildpacks:set https://github.com/envato/heroku-buildpack-ejson.git
+```
+
+On application start, it will use those 2 environment variables to decrypt the ejson file and export the secrets
+as environment variables.
+
+## Decrypting secrets
+
+Use the Heroku CLI to pipe the private key into ejson for decryption:
+
+```
+❯ heroku config:get EJSON_PRIVATE_KEY | ejson decrypt --key-from-stdin secrets.ejson
+{
+  "_public_key": "d437b2159cbf18a9e36fc1aa7a3007ea2b2ea5c0c2878d7101ad740c81418b55",
+  "SOME_API_KEY": "password"
+}
+```
