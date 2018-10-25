@@ -2,6 +2,7 @@
 
 . "$BUILDPACK_TEST_RUNNER_HOME/lib/test_utils".sh
 
+# use a consistent cache dir to avoid redownloading ejson & jq in each test
 CACHETMP=/tmp/heroku-buildpack-ejson-cache-dir
 mkdir -p $CACHETMP
 
