@@ -2,6 +2,9 @@
 
 . "$BUILDPACK_TEST_RUNNER_HOME/lib/test_utils".sh
 
+CACHETMP=/tmp/heroku-buildpack-ejson-cache-dir
+mkdir -p $CACHETMP
+
 beforeSetUp() {
   TMPDIR=$(mktemp -d)
 }
@@ -12,11 +15,11 @@ beforeTearDown() {
 
 compile_with_fixture() {
   FIXTURE_DIR="$BUILDPACK_HOME/test/fixtures/$1"
-  rm -r "$TMPDIR/build" "$TMPDIR/env" "$TMPDIR/cache" 2>/dev/null || true
+  rm -r "$TMPDIR/build" "$TMPDIR/env" 2>/dev/null || true
   cp -r "$FIXTURE_DIR/build" $TMPDIR 2>/dev/null || mkdir "$TMPDIR/build"
   cp -r "$FIXTURE_DIR/cache" $TMPDIR 2>/dev/null || mkdir "$TMPDIR/cache"
   cp -r "$FIXTURE_DIR/env" $TMPDIR 2>/dev/null || mkdir "$TMPDIR/env"
-  capture "$BUILDPACK_HOME/bin/compile" "$TMPDIR/build" "$TMPDIR/cache" "$TMPDIR/env"
+  capture "$BUILDPACK_HOME/bin/compile" "$TMPDIR/build" "$CACHETMP" "$TMPDIR/env"
   export_env_dir $1
 }
 
@@ -39,7 +42,6 @@ capture_profile_d_export_script() {
 test_simple() {
   compile_with_fixture simple
   assertCapturedSuccess
-  assertCaptured "Installing ejson"
   assertCaptured "Loading keypair from environment variables"
 
   capture_profile_d_export_script

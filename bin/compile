@@ -19,29 +19,34 @@ CACHE_DIR=$2
 ENV_DIR=$3
 
 if uname -sm | grep Darwin; then
-  PLATFORM="darwin"
   JQ_URL="https://github.com/stedolan/jq/releases/download/jq-1.5/jq-osx-amd64"
   EJSON_URL="https://github.com/Shopify/ejson/releases/download/v1.2.0/darwin-amd64"
 else
-  PLATFORM="linux"
   JQ_URL="https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64"
   EJSON_URL="https://github.com/Shopify/ejson/releases/download/v1.2.0/linux-amd64"
 fi
 
 BIN_DIR=$BUILD_DIR/vendor/bin
-mkdir -p $BIN_DIR
+mkdir -p "$BIN_DIR"
+mkdir -p "$CACHE_DIR"
 
-if ! [ -f "$BIN_DIR/ejson" ]; then
-  heading "Installing ejson from GitHub release (Platform $PLATFORM)"
-  mkdir -p "$BIN_DIR"
-  run_command_indented wget $EJSON_URL -O "$BIN_DIR/ejson"
-  chmod +x "$BIN_DIR/ejson"
+if ! [ -f "$CACHE_DIR/ejson" ]; then
+  heading "Installing ejson from GitHub release ($EJSON_URL)"
+  run_command_indented wget $EJSON_URL -O "$CACHE_DIR/ejson"
+  chmod +x "$CACHE_DIR/ejson"
 else
   heading "ejson is already installed"
 fi
+cp "$CACHE_DIR/ejson" "$BIN_DIR/ejson"
 
-run_command_indented wget $JQ_URL -O "$BIN_DIR/jq"
-chmod +x "$BIN_DIR/jq"
+if ! [ -f "$CACHE_DIR/jq" ]; then
+  heading "Installing jq from GitHub release ($JQ_URL)"
+  run_command_indented wget $JQ_URL -O "$CACHE_DIR/jq"
+  chmod +x "$CACHE_DIR/jq"
+else
+  heading "jq is already installed"
+fi
+cp "$CACHE_DIR/jq" "$BIN_DIR/jq"
 
 ERROR_MESSAGE="make sure EJSON_PRIVATE_KEY and EJSON_FILE are set"
 
