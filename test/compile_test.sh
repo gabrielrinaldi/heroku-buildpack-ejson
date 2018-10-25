@@ -48,7 +48,8 @@ test_simple() {
   assertCapturedSuccess
   assertCaptured "Decrypting config.ejson"
   assertCaptured "Done. Decrypted config.ejson"
-  assertEquals "$foo" "bar"
+  assertEquals "bar" "$foo"
+  assertEquals "" "$_public_key"
 }
 
 test_missing_private_key() {
