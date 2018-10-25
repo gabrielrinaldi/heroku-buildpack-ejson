@@ -44,11 +44,9 @@ test_simple() {
   (
     compile_with_fixture simple
     assertCapturedSuccess
-    assertCaptured "Loading keypair from environment variables"
 
     capture_profile_d_export_script
     assertCapturedSuccess
-    assertCaptured "Decrypting EJSON file at \`config.ejson\` and exporting as environment variables"
     assertEquals "bar" "$foo"
     assertEquals "" "$_public_key"
   )
@@ -58,7 +56,6 @@ test_missing_private_key() {
   (
     compile_with_fixture missing_private_key
     assertCapturedError
-    assertCaptured "Loading keypair from environment variables"
     assertCaptured 'EJSON_PRIVATE_KEY is undefined; make sure EJSON_PRIVATE_KEY and EJSON_FILE are set'
   )
 }
@@ -67,7 +64,6 @@ test_missing_ejson_file() {
   (
     compile_with_fixture missing_ejson_file
     assertCapturedError
-    assertCaptured "Loading keypair from environment variables"
     assertCaptured 'EJSON_FILE is undefined; make sure EJSON_PRIVATE_KEY and EJSON_FILE are set'
   )
 }
@@ -75,7 +71,6 @@ test_missing_ejson_file() {
 test_ejson_file_not_found_in_build_dir() {
   (
     compile_with_fixture missing_ejson_file_in_build
-    assertCaptured "Loading keypair from environment variables"
     capture_profile_d_export_script
     assertCapturedError
     assertCaptured "EJSON_FILE could not be found at config.ejson"
@@ -85,9 +80,7 @@ test_ejson_file_not_found_in_build_dir() {
 test_bad_keypair() {
   (
     compile_with_fixture bad_keypair
-    assertCaptured "Loading keypair from environment variables"
     capture_profile_d_export_script
-    assertCaptured "Decrypting EJSON file at \`config.ejson\` and exporting as environment variables"
     assertCapturedError
     assertCaptured "Decryption failed: couldn't decrypt message"
   )

@@ -50,8 +50,6 @@ cp "$CACHE_DIR/jq" "$BIN_DIR/jq"
 
 ERROR_MESSAGE="make sure EJSON_PRIVATE_KEY and EJSON_FILE are set"
 
-heading "Loading keypair from environment variables"
-
 if [ ! -f "$ENV_DIR/EJSON_PRIVATE_KEY" ]; then
   heading "EJSON_PRIVATE_KEY is undefined; $ERROR_MESSAGE"
   exit 1
@@ -71,8 +69,6 @@ set -o pipefail
 heading() {
   echo "----->" $@;
 }
-
-heading "Decrypting EJSON file at \`$EJSON_FILE\` and exporting as environment variables"
 
 APP_DIR=$(cd $(dirname "${BASH_SOURCE[0]}"); cd ..; pwd)
 BIN_DIR="$APP_DIR/vendor/bin"
