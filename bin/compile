@@ -72,7 +72,7 @@ heading() {
   echo "----->" $@;
 }
 
-echo "EJSON_FILE is \`$EJSON_FILE\`; decrypting EJSON file"
+heading "Decrypting EJSON file at \`$EJSON_FILE\` and exporting as environment variables"
 
 APP_DIR=$(cd $(dirname "${BASH_SOURCE[0]}"); cd ..; pwd)
 BIN_DIR="$APP_DIR/vendor/bin"
@@ -81,12 +81,9 @@ if [ ! -f "$APP_DIR/$EJSON_FILE" ]; then
   heading "EJSON_FILE could not be found at $EJSON_FILE"
   exit 1
 fi
-
-heading "Decrypting $EJSON_FILE"
 decrypt_output=$(echo $EJSON_PRIVATE_KEY | $BIN_DIR/ejson decrypt --key-from-stdin "$APP_DIR/$EJSON_FILE" 2>&1)
 if [ $? -eq 0 ]; then
   exports=$(echo $decrypt_output | $BIN_DIR/jq -r "to_entries|map(\"\(.key)=\(.value|tostring)\")|.[]" | grep -v '^_public_key=')
-  heading "Done. Decrypted $EJSON_FILE"
   for env_var in $exports; do
     export $env_var
   done
