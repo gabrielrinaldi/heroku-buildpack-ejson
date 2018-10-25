@@ -78,7 +78,7 @@ fi
 heading "Decrypting $EJSON_FILE"
 decrypt_output=$(echo $EJSON_PRIVATE_KEY | $BIN_DIR/ejson decrypt --key-from-stdin "$APP_DIR/$EJSON_FILE" 2>&1)
 if [ $? -eq 0 ]; then
-  exports=$(echo $decrypt_output | jq -r "to_entries|map(\"\(.key)='\(.value|tostring)'\")|.[]")
+  exports=$(echo $decrypt_output | $BIN_DIR/jq -r "to_entries|map(\"\(.key)='\(.value|tostring)'\")|.[]")
   heading "Done. Decrypted $EJSON_FILE"
   for s in $exports; do
     export $s
