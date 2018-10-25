@@ -33,7 +33,7 @@ export_env_dir() {
 }
 
 capture_profile_d_export_script() {
-  capture "$TMPDIR/build/.profile.d/export_ejson_secrets.sh"
+  capture "source $TMPDIR/build/.profile.d/export_ejson_secrets.sh"
 }
 
 test_simple() {
@@ -46,6 +46,7 @@ test_simple() {
   assertCapturedSuccess
   assertCaptured "Decrypting config.ejson"
   assertCaptured "Done. Decrypted config.ejson"
+  assertEquals "$foo" "bar"
 }
 
 test_missing_private_key() {
