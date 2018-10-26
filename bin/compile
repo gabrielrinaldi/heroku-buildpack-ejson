@@ -87,7 +87,9 @@ if [ $? -eq 0 ]; then
   done
 else
   heading $decrypt_output
-  exit 1
+  if [ ! -n "$HEROKU_EXEC_URL" ]; then
+    exit 1
+  fi
 fi
 EOP
 chmod +x $BUILD_DIR/.profile.d/export_ejson_secrets.sh
