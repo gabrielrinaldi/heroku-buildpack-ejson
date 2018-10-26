@@ -60,7 +60,7 @@ if [ ! -f "$ENV_DIR/EJSON_FILE" ]; then
   exit 1
 fi
 
-EJSON_FILE=$(cat "$ENV_DIR/EJSON_FILE")
+export EJSON_FILE=$(cat "$ENV_DIR/EJSON_FILE")
 if [ ! -f "$BUILD_DIR/$EJSON_FILE" ]; then
   heading "EJSON_FILE could not be found at $EJSON_FILE"
   exit 1
@@ -90,3 +90,8 @@ else
 fi
 EOP
 chmod +x $BUILD_DIR/.profile.d/export_ejson_secrets.sh
+
+export EJSON_PRIVATE_KEY=$(cat "$ENV_DIR/EJSON_PRIVATE_KEY")
+
+heading "Sourcing environment variables on compile"
+source $BUILD_DIR/.profile.d/export_ejson_secrets.sh
