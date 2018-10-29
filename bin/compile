@@ -79,15 +79,24 @@ heading() {
 APP_DIR=$(cd $(dirname "${BASH_SOURCE[0]}"); cd ..; pwd)
 BIN_DIR="$APP_DIR/vendor/bin"
 
-decrypt_output=$(echo $EJSON_PRIVATE_KEY | $BIN_DIR/ejson decrypt --key-from-stdin "$APP_DIR/$EJSON_FILE" 2>&1)
+exports=$(echo $EJSON_PRIVATE_KEY | \
+  $BIN_DIR/ejson decrypt --key-from-stdin "$APP_DIR/$EJSON_FILE" 2>&1 | \
+  $BIN_DIR/jq -r 'to_entries|map("export \(.key)=\(.value|tojson)")[]' | \
+  grep -v '^export _public_key=' | \
+  while IFS=$'\n' read -r line
+  do
+    echo "Line: $line" >> /tmp/export.log
+    echo $line
+  done)
+
 if [ $? -eq 0 ]; then
-  exports=$(echo $decrypt_output | $BIN_DIR/jq -r "to_entries|map(\"\(.key)=\(.value|tostring)\")|.[]" | grep -v '^_public_key=')
-  for env_var in $exports; do
-    export $env_var
-  done
+  eval "$exports"
 else
-  heading $decrypt_output
+  heading "Decryption failed"
 fi
+
+echo "Exp: $exports" >> /tmp/export.log
+echo "FOO: $foo" >> /tmp/export.log
 EOP
 chmod +x $BUILD_DIR/.profile.d/export_ejson_secrets.sh
 
