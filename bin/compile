@@ -19,68 +19,79 @@ CACHE_DIR=$2
 ENV_DIR=$3
 
 if uname -sm | grep Darwin; then
-  PLATFORM="darwin"
+  JQ_URL="https://github.com/stedolan/jq/releases/download/jq-1.5/jq-osx-amd64"
+  EJSON_URL="https://github.com/Shopify/ejson/releases/download/v1.2.0/darwin-amd64"
 else
-  PLATFORM="linux"
+  JQ_URL="https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64"
+  EJSON_URL="https://github.com/Shopify/ejson/releases/download/v1.2.0/linux-amd64"
 fi
 
+BIN_DIR=$BUILD_DIR/vendor/bin
+mkdir -p "$BIN_DIR"
+mkdir -p "$CACHE_DIR"
+
 if ! [ -f "$CACHE_DIR/ejson" ]; then
-  heading "Installing ejson from GitHub release (Platform $PLATFORM)"
-  mkdir -p "$CACHE_DIR"
-  run_command_indented wget https://github.com/Shopify/ejson/releases/download/1.0.1/ejson_${PLATFORM}_binary -O "$CACHE_DIR/ejson"
+  heading "Installing ejson from GitHub release ($EJSON_URL)"
+  run_command_indented wget $EJSON_URL -O "$CACHE_DIR/ejson"
   chmod +x "$CACHE_DIR/ejson"
 else
   heading "ejson is already installed"
 fi
+cp "$CACHE_DIR/ejson" "$BIN_DIR/ejson"
 
-heading "Loading keypair from environment variables"
-if [ ! -f "$ENV_DIR/EJSON_PUBLIC_KEY" ]; then
-    heading 'EJSON_PUBLIC_KEY is undefined; make sure EJSON_PUBLIC_KEY and EJSON_PRIVATE_KEY are set (try `ejson keygen`)'
-    exit 1
+if ! [ -f "$CACHE_DIR/jq" ]; then
+  heading "Installing jq from GitHub release ($JQ_URL)"
+  run_command_indented wget $JQ_URL -O "$CACHE_DIR/jq"
+  chmod +x "$CACHE_DIR/jq"
+else
+  heading "jq is already installed"
 fi
+cp "$CACHE_DIR/jq" "$BIN_DIR/jq"
+
+ERROR_MESSAGE="make sure EJSON_PRIVATE_KEY and EJSON_FILE are set"
 
 if [ ! -f "$ENV_DIR/EJSON_PRIVATE_KEY" ]; then
-    heading 'EJSON_PRIVATE_KEY is undefined; make sure EJSON_PUBLIC_KEY and EJSON_PRIVATE_KEY are set (try `ejson keygen`)'
-    exit 1
+  heading "EJSON_PRIVATE_KEY is undefined; $ERROR_MESSAGE"
+  exit 1
 fi
 
-export EJSON_KEYDIR=$(mktemp -d)
-trap 'rm -rf $EJSON_KEYDIR' EXIT
-PUBLIC_KEY=$(cat "$ENV_DIR/EJSON_PUBLIC_KEY")
-PRIVATE_KEY=$(cat "$ENV_DIR/EJSON_PRIVATE_KEY")
-echo "$PRIVATE_KEY" > "$EJSON_KEYDIR/$PUBLIC_KEY"
+if [ ! -f "$ENV_DIR/EJSON_FILE" ]; then
+  heading "EJSON_FILE is undefined; $ERROR_MESSAGE"
+  exit 1
+fi
 
-if [ ! -s "$ENV_DIR/EJSON_ENVIRONMENT" ]; then
-  PREDICATE="( -name *.ejson ) -and -not ( -name *.*.ejson )"
-  EXTENSION=".ejson"
-  heading "EJSON_ENVIRONMENT is undefined or empty; enumerating and decrypting EJSON files of the form \`*.ejson\`"
+export EJSON_FILE=$(cat "$ENV_DIR/EJSON_FILE")
+if [ ! -f "$BUILD_DIR/$EJSON_FILE" ]; then
+  heading "EJSON_FILE could not be found at $EJSON_FILE"
+  exit 1
+fi
+
+mkdir -p $BUILD_DIR/.profile.d
+cat > $BUILD_DIR/.profile.d/export_ejson_secrets.sh <<"EOP"
+#!/bin/bash
+
+set -o pipefail
+
+heading() {
+  echo "----->" $@;
+}
+
+APP_DIR=$(cd $(dirname "${BASH_SOURCE[0]}"); cd ..; pwd)
+BIN_DIR="$APP_DIR/vendor/bin"
+
+decrypt_output=$(echo $EJSON_PRIVATE_KEY | $BIN_DIR/ejson decrypt --key-from-stdin "$APP_DIR/$EJSON_FILE" 2>&1)
+if [ $? -eq 0 ]; then
+  exports=$(echo $decrypt_output | $BIN_DIR/jq -r "to_entries|map(\"\(.key)=\(.value|tostring)\")|.[]" | grep -v '^_public_key=')
+  for env_var in $exports; do
+    export $env_var
+  done
 else
-  ENVIRONMENT=$(cat "$ENV_DIR/EJSON_ENVIRONMENT")
-  EXTENSION=".$ENVIRONMENT.ejson"
-  PREDICATE="( -name *$EXTENSION )"
-  heading "EJSON_ENVIRONMENT is \`$ENVIRONMENT\`; enumerating and decrypting EJSON files of the form \`*.$ENVIRONMENT.ejson\`"
+  heading $decrypt_output
 fi
+EOP
+chmod +x $BUILD_DIR/.profile.d/export_ejson_secrets.sh
 
-COUNTER=0
-for FILE in $(find "$BUILD_DIR" $PREDICATE); do
-  DECRYPTED_FILE=${FILE%$EXTENSION}.json
+export EJSON_PRIVATE_KEY=$(cat "$ENV_DIR/EJSON_PRIVATE_KEY")
 
-  if [ -f "$DECRYPTED_FILE" ]; then
-    MEMO=" [overwriting existing file]"
-  elif [ -e "$DECRYPTED_FILE" ]; then
-    heading "${DECRYPTED_FILE:${#BUILD_DIR}+1}: already exists but is not a regular file"
-    exit 1
-  else
-    MEMO=""
-  fi
-
-  if "$CACHE_DIR/ejson" decrypt "$FILE" > "$DECRYPTED_FILE" 2>&1; then
-    heading "Decrypting ${FILE:${#BUILD_DIR}+1} --> ${DECRYPTED_FILE:${#BUILD_DIR}+1}$MEMO"
-    let COUNTER+=1
-  else
-    heading "${FILE:${#BUILD_DIR}+1}": $(cat "$DECRYPTED_FILE")
-    exit 1
-  fi
-done
-
-heading "Done. Decrypted $COUNTER different ejson file(s)"
+heading "Sourcing environment variables on compile"
+source $BUILD_DIR/.profile.d/export_ejson_secrets.sh
