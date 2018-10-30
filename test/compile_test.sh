@@ -8,6 +8,8 @@ mkdir -p $CACHETMP
 
 beforeSetUp() {
   TMPDIR=$(mktemp -d)
+  unset foo
+  unset _public_key
 }
 
 beforeTearDown() {
@@ -37,20 +39,19 @@ export_env_dir() {
 }
 
 capture_profile_d_export_script() {
-  source $TMPDIR/build/.profile.d/export_ejson_secrets.sh
+  capture "source $TMPDIR/build/.profile.d/export_ejson_secrets.sh"
 }
 
 test_simple() {
-    compile_with_fixture simple
-    assertCapturedSuccess
+  compile_with_fixture simple
+  assertCapturedSuccess
 
-    capture_profile_d_export_script
-    assertCapturedSuccess
-    echo $foo
-    assertEquals "Bar's Baz
+  capture_profile_d_export_script
+  assertCapturedSuccess
+  assertEquals "Bar's Baz
 
 Hello" "$foo"
-    assertEquals "" "$_public_key"
+  assertEquals "" "$_public_key"
 }
 
 test_missing_private_key() {
@@ -59,26 +60,20 @@ test_missing_private_key() {
   assertCaptured 'EJSON_PRIVATE_KEY is undefined; make sure EJSON_PRIVATE_KEY and EJSON_FILE are set'
 }
 
-# test_missing_ejson_file() {
-#   (
-#     compile_with_fixture missing_ejson_file
-#     assertCapturedError
-#     assertCaptured 'EJSON_FILE is undefined; make sure EJSON_PRIVATE_KEY and EJSON_FILE are set'
-#   )
-# }
+test_missing_ejson_file() {
+  compile_with_fixture missing_ejson_file
+  assertCapturedError
+  assertCaptured 'EJSON_FILE is undefined; make sure EJSON_PRIVATE_KEY and EJSON_FILE are set'
+}
 
-# test_ejson_file_not_found_in_build_dir() {
-#   (
-#     compile_with_fixture missing_ejson_file_in_build
-#     capture_profile_d_export_script
-#     assertCapturedError
-#     assertCaptured "EJSON_FILE could not be found at config.ejson"
-#   )
-# }
+test_ejson_file_not_found_in_build_dir() {
+  compile_with_fixture missing_ejson_file_in_build
+  assertCapturedError
+  assertCaptured "EJSON_FILE could not be found at config.ejson"
+}
 
 test_bad_keypair() {
   compile_with_fixture bad_keypair
-  capture_profile_d_export_script
   assertCapturedError
-  assertCaptured "Decryption failed: couldn't decrypt message"
+  assertCaptured "Decryption failed"
 }

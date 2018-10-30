@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eo pipefail
+set -o pipefail
 
 heading() {
   echo "----->" $@;
@@ -81,11 +81,10 @@ BIN_DIR="$APP_DIR/vendor/bin"
 
 exports=$(echo $EJSON_PRIVATE_KEY | \
   $BIN_DIR/ejson decrypt --key-from-stdin "$APP_DIR/$EJSON_FILE" 2>&1 | \
-  $BIN_DIR/jq -r 'to_entries|map("export \(.key)=\(.value|tojson)")[]' | \
+  $BIN_DIR/jq -r 'to_entries|map("export \(.key)=\(.value|tojson)")[]' 2>&1 | \
   grep -v '^export _public_key=' | \
   while IFS=$'\n' read -r line
   do
-    echo "Line: $line" >> /tmp/export.log
     echo $line
   done)
 
@@ -93,14 +92,19 @@ if [ $? -eq 0 ]; then
   eval "$exports"
 else
   heading "Decryption failed"
-fi
 
-echo "Exp: $exports" >> /tmp/export.log
-echo "FOO: $foo" >> /tmp/export.log
+  # Don't exit 1 here to allow heroku ps:exec to work
+  export EJSON_DECRYPT_FAILED=true
+fi
 EOP
 chmod +x $BUILD_DIR/.profile.d/export_ejson_secrets.sh
 
 export EJSON_PRIVATE_KEY=$(cat "$ENV_DIR/EJSON_PRIVATE_KEY")
 
 heading "Sourcing environment variables on compile"
+export HEROKU_COMPILE=true
 source $BUILD_DIR/.profile.d/export_ejson_secrets.sh
+
+if [[ "${EJSON_DECRYPT_FAILED}" == "true" ]]; then
+  exit 1
+fi
