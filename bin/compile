@@ -94,6 +94,8 @@ else
   heading "Decryption failed"
 
   # Don't exit 1 here to allow heroku ps:exec to work
+  # App environment variables are only available when booting the app, when ps:exec runs they are not available
+  # here which would cause this to fail
   export EJSON_DECRYPT_FAILED=true
 fi
 EOP
