@@ -79,25 +79,43 @@ heading() {
 APP_DIR=$(cd $(dirname "${BASH_SOURCE[0]}"); cd ..; pwd)
 BIN_DIR="$APP_DIR/vendor/bin"
 
-exports=$(echo $EJSON_PRIVATE_KEY | \
-  $BIN_DIR/ejson decrypt --key-from-stdin "$APP_DIR/$EJSON_FILE" 2>&1 | \
+decrypt_ejson_file() {
+  echo $EJSON_PRIVATE_KEY | \
+    $BIN_DIR/ejson decrypt --key-from-stdin "$APP_DIR/$EJSON_FILE" 2>&1
+}
+
+json_to_export_lines() {
   $BIN_DIR/jq -r 'to_entries|map("export \(.key)=\(.value|tojson)")[]' 2>&1 | \
-  grep -v '^export _public_key=' | \
-  while IFS=$'\n' read -r line
-  do
-    echo $line
-  done)
+    grep -v '^export _public_key='
+}
 
-if [ $? -eq 0 ]; then
-  eval "$exports"
-else
-  heading "Decryption failed"
+ejson_exports() {
+  decrypt_ejson_file | \
+    json_to_export_lines | \
+    while IFS=$'\n' read -r line
+    do
+      echo $line
+    done
+}
 
-  # Don't exit 1 here to allow heroku ps:exec to work
-  # App environment variables are only available when booting the app, when ps:exec runs they are not available
-  # here which would cause ps:exec to fail.
-  export EJSON_DECRYPT_FAILED=true
-fi
+export_ejson_secrets() {
+  exports=$(ejson_exports)
+  return_status=$?
+
+  if [ $return_status -eq 0 ]; then
+    eval "$exports"
+  else
+    # re-execute decryption to get failure message then display
+    decryption_output=$(decrypt_ejson_file)
+    # make sure it's still not successful this time
+    if [ $? -ne 0 ]; then
+      heading "$decryption_output"
+    fi
+  fi
+
+  return $return_status
+}
+
 EOP
 chmod +x $BUILD_DIR/.profile.d/export_ejson_secrets.sh
 
@@ -106,6 +124,7 @@ export EJSON_PRIVATE_KEY=$(cat "$ENV_DIR/EJSON_PRIVATE_KEY")
 heading "Sourcing environment variables on compile"
 source $BUILD_DIR/.profile.d/export_ejson_secrets.sh
 
-if [[ "${EJSON_DECRYPT_FAILED}" == "true" ]]; then
+export_ejson_secrets
+if [ $? -ne 0 ]; then
   exit 1
 fi

@@ -62,6 +62,12 @@ Add this Heroku buildpack:
 ❯ heroku buildpacks:set https://github.com/envato/heroku-buildpack-ejson.git
 ```
 
+Add this line to your application's `.profile` script:
+
+```
+export_ejson_secrets
+```
+
 On application start, it will use those 2 environment variables to decrypt the ejson file and export the secrets
 as environment variables.
 
