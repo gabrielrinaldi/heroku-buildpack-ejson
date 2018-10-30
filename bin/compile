@@ -125,6 +125,6 @@ heading "Sourcing environment variables on compile"
 source $BUILD_DIR/.profile.d/export_ejson_secrets.sh
 
 export_ejson_secrets
-if [ $? -ne 0 ]; then
+if [[ $? -ne 0 ]]; then
   exit 1
 fi
