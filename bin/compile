@@ -102,7 +102,6 @@ chmod +x $BUILD_DIR/.profile.d/export_ejson_secrets.sh
 export EJSON_PRIVATE_KEY=$(cat "$ENV_DIR/EJSON_PRIVATE_KEY")
 
 heading "Sourcing environment variables on compile"
-export HEROKU_COMPILE=true
 source $BUILD_DIR/.profile.d/export_ejson_secrets.sh
 
 if [[ "${EJSON_DECRYPT_FAILED}" == "true" ]]; then
