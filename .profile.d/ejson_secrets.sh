@@ -8,14 +8,15 @@ heading() {
 
 APP_DIR=$(cd $(dirname "${BASH_SOURCE[0]}"); cd ..; pwd)
 BIN_DIR="$APP_DIR/vendor/bin"
+PATH="$PATH:$BIN_DIR"
 
 decrypt_ejson_file() {
   echo $EJSON_PRIVATE_KEY | \
-    $BIN_DIR/ejson decrypt --key-from-stdin "$APP_DIR/$EJSON_FILE" 2>&1
+    ejson decrypt --key-from-stdin "$APP_DIR/$EJSON_FILE" 2>&1
 }
 
 json_to_export_lines() {
-  $BIN_DIR/jq -r 'to_entries|map("export \(.key)=\(.value|tojson)")[]' 2>&1 | \
+  jq -r 'to_entries|map("export \(.key)=\(.value|tojson)")[]' 2>&1 | \
     grep -v '^export _public_key='
 }
 
