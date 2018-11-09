@@ -39,7 +39,7 @@ export_env_dir() {
 }
 
 source_profile_d_export_script() {
-  source $TMPDIR/build/.profile.d/export_ejson_secrets.sh
+  source $TMPDIR/build/.profile.d/ejson_secrets.sh
 }
 
 test_simple() {
