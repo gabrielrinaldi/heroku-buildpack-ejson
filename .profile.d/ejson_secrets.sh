@@ -1,45 +1,34 @@
 #!/bin/bash
 
-set -o pipefail
-
 heading() {
   echo "----->" $@;
 }
 
 APP_DIR=$(cd $(dirname "${BASH_SOURCE[0]}"); cd ..; pwd)
-BIN_DIR="$APP_DIR/vendor/bin"
-PATH="$PATH:$BIN_DIR"
+
+if uname -sm | grep Darwin; then
+  PATH="vendor/ejson2env/darwin-amd64:$PATH"
+else
+  PATH="vendor/ejson2env/linux-amd64:$PATH"
+fi
 
 decrypt_ejson_file() {
-  echo $EJSON_PRIVATE_KEY | \
-    ejson decrypt --key-from-stdin "$APP_DIR/$EJSON_FILE" 2>&1
-}
-
-json_to_export_lines() {
-  jq -r 'to_entries|map("export \(.key)=\(.value|tojson)")[]' 2>&1 | \
-    grep -v '^export _public_key='
-}
-
-ejson_exports() {
-  decrypt_ejson_file | \
-    json_to_export_lines | \
-    while IFS=$'\n' read -r line
-    do
-      echo $line
-    done
+  echo $EJSON_PRIVATE_KEY | ejson2env --key-from-stdin "$APP_DIR/$EJSON_FILE" 2>&1
 }
 
 export_ejson_secrets() {
-  exports=$(ejson_exports)
+  decrypt_ejson_file > /tmp/ejson_env.sh
   return_status=$?
 
   if [ $return_status -eq 0 ]; then
-    eval "$exports"
+    source /tmp/ejson_env.sh
+    rm /tmp/ejson_env.sh
   else
     # re-execute decryption to get failure message then display
     decryption_output=$(decrypt_ejson_file)
     # make sure it's still not successful this time
     if [ $? -ne 0 ]; then
+      heading "EJSON decryption failed:"
       heading "$decryption_output"
     fi
   fi
