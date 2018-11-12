@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -o pipefail
+
 heading() {
   echo "----->" $@;
 }
