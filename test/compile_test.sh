@@ -42,7 +42,7 @@ test_simple() {
   compile_with_fixture simple
   assertCapturedSuccess
 
-  "$BUILDPACK_HOME/test/export_to_file.sh" simple
+  TMPDIR=$TMPDIR "$BUILDPACK_HOME/test/export_to_file.sh" simple
   _public_key=$(cat $TMPDIR/_public_key)
   foo=$(cat $TMPDIR/foo)
   assertEquals "Bar's Baz
