@@ -5,12 +5,8 @@ heading() {
 }
 
 APP_DIR=$(cd $(dirname "${BASH_SOURCE[0]}"); cd ..; pwd)
-
-if uname -sm | grep Darwin; then
-  PATH="vendor/ejson2env/darwin-amd64:$PATH"
-else
-  PATH="vendor/ejson2env/linux-amd64:$PATH"
-fi
+BIN_DIR="$APP_DIR/vendor/bin"
+PATH="$PATH:$BIN_DIR"
 
 decrypt_ejson_file() {
   echo $EJSON_PRIVATE_KEY | ejson2env --key-from-stdin "$APP_DIR/$EJSON_FILE" 2>&1
