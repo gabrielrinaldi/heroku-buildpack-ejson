@@ -13,7 +13,7 @@ export_env_dir() {
 }
 export_env_dir $1
 
-. "$TMPDIR/build/.profile.d/ejson_secrets.sh"
+. "$TMPDIR/build/.profile.d/01_ejson_secrets.sh"
 export_ejson_secrets # call buildpack defined function
 echo "$foo" > "$TMPDIR/foo"
 echo $_public_key > "$TMPDIR/_public_key"
