@@ -33,3 +33,7 @@ export_ejson_secrets() {
 
   return $return_status
 }
+
+if [[ "$EJSON_AUTO_EXPORT" == "true" ]]; then
+  export_ejson_secrets
+fi
