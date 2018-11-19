@@ -17,36 +17,18 @@ run_command_indented() {
 BUILD_DIR=$1
 CACHE_DIR=$2
 ENV_DIR=$3
-
-if uname -sm | grep Darwin; then
-  JQ_URL="https://github.com/stedolan/jq/releases/download/jq-1.5/jq-osx-amd64"
-  EJSON_URL="https://github.com/Shopify/ejson/releases/download/v1.2.0/darwin-amd64"
-else
-  JQ_URL="https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64"
-  EJSON_URL="https://github.com/Shopify/ejson/releases/download/v1.2.0/linux-amd64"
-fi
+BUILDPACK_HOME=$(cd $(dirname "${BASH_SOURCE[0]}"); cd ..; pwd)
 
 BIN_DIR=$BUILD_DIR/vendor/bin
+PATH="$PATH:$BIN_DIR"
 mkdir -p "$BIN_DIR"
 mkdir -p "$CACHE_DIR"
 
-if ! [ -f "$CACHE_DIR/ejson" ]; then
-  heading "Installing ejson from GitHub release ($EJSON_URL)"
-  run_command_indented wget $EJSON_URL -O "$CACHE_DIR/ejson"
-  chmod +x "$CACHE_DIR/ejson"
+if uname -sm | grep Darwin; then
+  cp "$BUILDPACK_HOME/vendor/ejson2env/darwin-amd64/ejson2env" "$BIN_DIR/ejson2env"
 else
-  heading "ejson is already installed"
+  cp "$BUILDPACK_HOME/vendor/ejson2env/linux-amd64/ejson2env" "$BIN_DIR/ejson2env"
 fi
-cp "$CACHE_DIR/ejson" "$BIN_DIR/ejson"
-
-if ! [ -f "$CACHE_DIR/jq" ]; then
-  heading "Installing jq from GitHub release ($JQ_URL)"
-  run_command_indented wget $JQ_URL -O "$CACHE_DIR/jq"
-  chmod +x "$CACHE_DIR/jq"
-else
-  heading "jq is already installed"
-fi
-cp "$CACHE_DIR/jq" "$BIN_DIR/jq"
 
 ERROR_MESSAGE="make sure EJSON_PRIVATE_KEY and EJSON_FILE are set"
 
@@ -69,13 +51,13 @@ fi
 mkdir -p $BUILD_DIR/.profile.d
 
 BUILDPACK_DIR=$(cd $(dirname "${BASH_SOURCE[0]}"); cd ..; pwd)
-cp $BUILDPACK_DIR/.profile.d/ejson_secrets.sh $BUILD_DIR/.profile.d/ejson_secrets.sh
-chmod +x $BUILD_DIR/.profile.d/ejson_secrets.sh
+cp $BUILDPACK_DIR/.profile.d/ejson_secrets.sh $BUILD_DIR/.profile.d/01_ejson_secrets.sh
+chmod +x $BUILD_DIR/.profile.d/01_ejson_secrets.sh
 
 export EJSON_PRIVATE_KEY=$(cat "$ENV_DIR/EJSON_PRIVATE_KEY")
 
 heading "Sourcing environment variables on compile"
-source $BUILD_DIR/.profile.d/ejson_secrets.sh
+source $BUILD_DIR/.profile.d/01_ejson_secrets.sh
 
 export_ejson_secrets
 if [[ $? -ne 0 ]]; then

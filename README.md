@@ -32,7 +32,9 @@ Create an EJSON file `secrets.ejson` using the public key and add your first sec
 ```json
 {
   "_public_key": "d437b2159cbf18a9e36fc1aa7a3007ea2b2ea5c0c2878d7101ad740c81418b55",
-  "SOME_API_KEY": "password"
+  "environment": {
+    "SOME_API_KEY": "password"
+  }
 }
 ```
 
@@ -79,6 +81,8 @@ Use the Heroku CLI to pipe the private key into ejson for decryption:
 ❯ heroku config:get EJSON_PRIVATE_KEY | ejson decrypt --key-from-stdin secrets.ejson
 {
   "_public_key": "d437b2159cbf18a9e36fc1aa7a3007ea2b2ea5c0c2878d7101ad740c81418b55",
-  "SOME_API_KEY": "password"
+  "environment": {
+    "SOME_API_KEY": "password"
+  }
 }
 ```

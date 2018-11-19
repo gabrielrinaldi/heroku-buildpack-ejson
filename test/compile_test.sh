@@ -38,16 +38,13 @@ export_env_dir() {
   done
 }
 
-source_profile_d_export_script() {
-  source $TMPDIR/build/.profile.d/export_ejson_secrets.sh
-}
-
 test_simple() {
   compile_with_fixture simple
   assertCapturedSuccess
 
-  source_profile_d_export_script
-  export_ejson_secrets # call buildpack defined function
+  TMPDIR=$TMPDIR "$BUILDPACK_HOME/test/export_to_file.sh" simple
+  _public_key=$(cat $TMPDIR/_public_key)
+  foo=$(cat $TMPDIR/foo)
   assertEquals "Bar's Baz
 
 Hello" "$foo"
@@ -75,5 +72,5 @@ test_ejson_file_not_found_in_build_dir() {
 test_bad_keypair() {
   compile_with_fixture bad_keypair
   assertCapturedError
-  assertCaptured "Decryption failed: couldn't decrypt message"
+  assertCaptured "couldn't decrypt message"
 }
