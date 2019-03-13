@@ -70,6 +70,13 @@ Add this line to your application's `.profile` script:
 export_ejson_secrets
 ```
 
+Alternatively you can set the `EJSON_AUTO_EXPORT` environment variable.
+
+```
+heroku config:set \
+  EJSON_AUTO_EXPORT=true
+```
+
 On application start, it will use those 2 environment variables to decrypt the ejson file and export the secrets
 as environment variables.
 
