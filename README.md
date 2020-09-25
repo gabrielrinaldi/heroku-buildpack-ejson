@@ -1,9 +1,9 @@
-# Heroku Buildpack for EJSON [![Build Status](https://travis-ci.org/envato/heroku-buildpack-ejson.svg?branch=master)](https://travis-ci.org/envato/heroku-buildpack-ejson)
+# Heroku Buildpack for EJSON
 
 This is a [Heroku Buildback](http://devcenter.heroku.com/articles/buildpacks) that automates the decryption of
 [EJSON](https://github.com/Shopify/ejson) secrets on deploy.
 
-It's a fork of [Shopify's EJSON buildpack](https://github.com/Shopify/ejson) that exports secrets as environment
+It's a fork of [Envato's EJSON buildpack](https://github.com/envato/ejson) that exports secrets as environment
 variables on application start rather than writing to a JSON file when the slug is compiled. This avoids storing
 an unencrypted secrets file on disk and allows apps to continue fetching secrets from environment variables.
 
@@ -61,7 +61,14 @@ heroku config:set \
 Add this Heroku buildpack:
 
 ```
+❯ heroku buildpacks:set https://github.com/heroku/heroku-buildpack-apt.git
 ❯ heroku buildpacks:set https://github.com/envato/heroku-buildpack-ejson.git
+```
+
+Create a `Aptfile` with the `ejson2env` package:
+
+```
+https://github.com/Shopify/ejson2env/releases/download/v2.0.0/ejson2env_2.0.0_amd64.deb
 ```
 
 Add this line to your application's `.profile` script:

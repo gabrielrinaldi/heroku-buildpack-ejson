@@ -15,20 +15,8 @@ run_command_indented() {
 }
 
 BUILD_DIR=$1
-CACHE_DIR=$2
 ENV_DIR=$3
 BUILDPACK_HOME=$(cd $(dirname "${BASH_SOURCE[0]}"); cd ..; pwd)
-
-BIN_DIR=$BUILD_DIR/vendor/bin
-PATH="$PATH:$BIN_DIR"
-mkdir -p "$BIN_DIR"
-mkdir -p "$CACHE_DIR"
-
-if uname -sm | grep Darwin; then
-  cp "$BUILDPACK_HOME/vendor/ejson2env/darwin-amd64/ejson2env" "$BIN_DIR/ejson2env"
-else
-  cp "$BUILDPACK_HOME/vendor/ejson2env/linux-amd64/ejson2env" "$BIN_DIR/ejson2env"
-fi
 
 ERROR_MESSAGE="make sure EJSON_PRIVATE_KEY and EJSON_FILE are set"
 
@@ -59,7 +47,9 @@ export EJSON_PRIVATE_KEY=$(cat "$ENV_DIR/EJSON_PRIVATE_KEY")
 heading "Sourcing environment variables on compile"
 source $BUILD_DIR/.profile.d/01_ejson_secrets.sh
 
-export_ejson_secrets
+save_ejson_secrets
+
+mv /tmp/ejson_env.sh $BUILDPACK_DIR/export
 if [[ $? -ne 0 ]]; then
   exit 1
 fi

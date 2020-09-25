@@ -1,4 +1,0 @@
-name: heroku-buildpack-ejson
-commands:
-  test: script/test
-  run-fixture: script/run-fixture
